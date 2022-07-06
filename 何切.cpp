@@ -5,106 +5,97 @@
 #include <random>       // std::default_random_engine
 #include <chrono>       // std::chrono::system_clock
 #include <string>
-#define pile_type_number 34
+#define tile_type_number 34
 
-class Piles
-{
+class Tiles {
 private:
-    std::array<int, pile_type_number> pile;
-    std::array<int, pile_type_number * 4> mountain;
-    void output_pile();
-    bool is_win();
-    bool is_triple(std::array<int, pile_type_number> p, int eyes);
-    void discard();
-    std::string id_to_pilename(int id);
-    int pilename_to_id(std::string pilename);
+    std::array<std::string, tile_type_number> material = {"🀇", "🀈", "🀉", "🀊", "🀋", "🀌", "🀍", "🀎", "🀏", "🀙", "🀚", "🀛", "🀜", "🀝", "🀞", "🀟", "🀠", "🀡",
+                                                "🀐", "🀑", "🀒", "🀓", "🀔", "🀕", "🀖", "🀗", "🀘", "🀀", "🀁", "🀂", "🀃", "🀆", "🀅", "🀄"};
+    std::array<int, tile_type_number> tile;
+    std::array<int, tile_type_number * 4> mountain;
+    void print_hands();
+    int deal();
+    bool is_win(std::array<int, tile_type_number> t, int d);
+    bool is_triple(std::array<int, tile_type_number> p, int eyes);
+    void discard_and_get_deal(int d);
+    int tilename_to_id(std::string tilename);
+    int number_of_hands;
+    int mountain_position;
 public:
-    Piles();
-    ~Piles();
+    Tiles();
+    ~Tiles();
     void initialize();
-    void game_play();
+    void self_practice();
 };
 
-Piles::Piles(/* args */)
-{
-}
-
-Piles::~Piles()
-{
+Tiles::Tiles(/* args */) {
     initialize();
 }
 
-void Piles::initialize()
-{
-    pile.fill(0);
-    for (int i = 0; i < pile_type_number*4; i++) mountain.at(i) = i / 4;
+Tiles::~Tiles() {
+}
+
+void Tiles::initialize() {
+    // 清空手牌、重洗牌山
+    number_of_hands = 0;
+    tile.fill(0);
+    for (int i = 0; i < tile_type_number*4; i++) mountain.at(i) = i / 4;
     // obtain a time-based seed:
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::shuffle(mountain.begin(), mountain.end(), std::default_random_engine(seed));
+    mountain_position = 0;
 }
 
-void Piles::game_play()
-{
-    int position = 0;
-    while(position < 13) pile.at(mountain.at(position++)) += 1;
+void Tiles::self_practice() {
+    initialize();
+    // 發手牌
+    while(number_of_hands < 13) {
+        tile.at(mountain.at(mountain_position++)) += 1;
+        number_of_hands += 1;
+    }
+    // 遊戲進行
     std::cout << "game_start" << std::endl;
-    while (!is_win() && position < pile_type_number * 4) {
-        output_pile();
-        std::cout << " " << id_to_pilename(mountain.at(position)) << std::endl;
-        pile.at(mountain.at(position)) += 1;
-        if (is_win()) break;
-        discard();
-        position++;
+    while (mountain_position < tile_type_number * 4) {
+        print_hands();
+        int d = deal();
+        std::cout << " " << material.at(d) << std::endl; 
+        if (is_win(tile, d)) {
+            std::cout << "自摸" << std::endl;
+            return;
+        };
+        discard_and_get_deal(d);;
     }
-    if (position < pile_type_number * 4) std::cout << "自摸" << std::endl;
-    else std::cout << "流局" << std::endl;
+    std::cout << "流局" << std::endl;
 }
 
-void Piles::output_pile()
-{
-    int i = 0;
-    // 輸出萬子
-    while (i < 9) {
-        for (int n = 0; n < pile.at(i); n++) std::cout << i + 1;
-        i++;
+void Tiles::print_hands() {
+    for (int i = 0; i < tile_type_number; i++) {
+        for (int n = 0; n < tile.at(i); n++) std::cout << material.at(i) << ' ';
+        if (i == 8 || i == 17 || i == 26) std::cout << "  ";
     }
-    std::cout << "m";
-    // 輸出筒子
-    while (i < 18) {
-        for (int n = 0; n < pile.at(i); n++) std::cout << i - 8;
-        i++;
-    }
-    std::cout << "p";
-    // 輸出索子
-    while (i < 27) {
-        for (int n = 0; n < pile.at(i); n++) std::cout << i - 17;
-        i++;
-    }
-    std::cout << "s";
-     // 輸出字牌
-    while (i < pile_type_number) {
-        for (int n = 0; n < pile.at(i); n++) std::cout << i - 26;
-        i++;
-    }
-    std::cout << "z";
 }
 
-bool Piles::is_win()
+int Tiles::deal() {
+    return mountain.at(mountain_position++);
+}
+
+bool Tiles::is_win(std::array<int, tile_type_number> t, int d) 
 {   
-    for (int i = 0; i < pile_type_number; i++) {
+    t.at(d) += 1;
+    for (int i = 0; i < tile_type_number; i++) {
         // find eyes
-        if (pile.at(i) >= 2 && is_triple(pile, i)) return true;
+        if (t.at(i) >= 2 && is_triple(t, i)) return true;
     }
     return false;
 }
 
-bool Piles::is_triple(std::array<int, pile_type_number> p, int eyes)
+bool Tiles::is_triple(std::array<int, tile_type_number> p, int eyes)
 {
     p.at(eyes) -= 2;
-    for (int i = 0; i < pile_type_number; i++) {
+    for (int i = 0; i < tile_type_number; i++) {
         if (p.at(i) >= 3) p.at(i) -= 3;
         if (p.at(i) > 0) {
-            if ((i >= 0 && i <= 6) || (i >= 9 && i <= 15) || (i >= 18 < i <= 24)) {
+            if ((i >= 0 && i <= 6) || (i >= 9 && i <= 15) || (i >= 18 && i <= 24)) {
                 if (p.at(i + 1) >= p.at(i) && p.at(i + 2) >= p.at(i)) {
                     p.at(i + 1) -= p.at(i);
                     p.at(i + 2) -= p.at(i);
@@ -117,50 +108,34 @@ bool Piles::is_triple(std::array<int, pile_type_number> p, int eyes)
     return true;
 }
 
-void Piles::discard()
-{
-    std::cout << "enter which pile to discard: ";
-    std::string discard_pilename;
-    std::cin >> discard_pilename;
-    int id = pilename_to_id(discard_pilename);
-    while (id == -1 || pile.at(id) <= 0) {
-        std::cout << "invalid discard: " << discard_pilename << std::endl;
-        std::cout << "please enter again: ";
-        std::cin >> discard_pilename;
-        id = pilename_to_id(discard_pilename);
+void Tiles::discard_and_get_deal(int d) {
+    std::cout << "輸入要打出的牌的位置(由左至右1到14): ";
+    int discard_position;
+    std::cin >> discard_position;
+    while(discard_position < 1 || discard_position > number_of_hands + 1) {
+        std::cout << "輸入錯誤(" << discard_position << ")" << std::endl;
+        std::cout << "請重新輸入: ";
+        std::cin >> discard_position;
     }
-    pile.at(id) -= 1;
+
+    if (discard_position != number_of_hands + 1) {
+        int discard_id = -1;
+        while (discard_position > 0) {
+            discard_id += 1;
+            discard_position -= tile.at(discard_id);
+        }
+        tile.at(discard_id) -= 1;
+        tile.at(d) += 1;
+    }
+    else {/* discard what player gets, do nothing*/}
 }
 
-std::string Piles::id_to_pilename(int id) 
-{
-    std::string s;
-    switch (id)
-    {
-    case 0 ... 8:
-        s = std::to_string(id + 1) + "m";
-        break;
-    case 9 ... 17:
-        s = std::to_string(id - 8) + "p";
-        break;
-    case 18 ... 26:
-        s = std::to_string(id - 17) + "s";
-        break;
-    case 27 ... pile_type_number:
-        s = std::to_string(id - 26) + "z";
-        break;
-    default:
-        s = "invalid id at id_to_pilename";
-        break;
-    }
-    return s;
-}
+int Tiles::tilename_to_id(std::string tilename) {
+    if (tilename.at(0) < '1' || tilename.at(0) > '9') return -1;
+    if (tilename.at(1) != 'w' || tilename.at(1) != 'p' || tilename.at(1) != 's' || tilename.at(1) != 'z') return -1;
 
-int Piles::pilename_to_id(std::string pilename) {
-    if (pilename.at(0) < '1' || pilename.at(0) > '9') return -1;
-
-    int id = pilename.at(0) - '0';
-    switch (pilename.at(1))
+    int id = tilename.at(0) - '0';
+    switch (tilename.at(1))
     {
     case 'm':
         id -= 1;
@@ -172,8 +147,8 @@ int Piles::pilename_to_id(std::string pilename) {
         id += 17;
         break;
     case 'z':
-        if (pilename.at(0) > '7') id = -1;
-        else id += 26;
+        if (tilename.at(0) <= '7') id += 26;
+        else id = -1;
         break;
     default:
         id = -1;
@@ -182,16 +157,21 @@ int Piles::pilename_to_id(std::string pilename) {
     return id;
 }
 
-int main() 
-{
-    Piles p;
+int main() {
+    Tiles p;
     bool ongoing = true;
+    std::string command;
 
     while (ongoing) {
-        std::cout << "waiting for initialization" << std::endl;
+        std::cout << "初始化中..." << std::endl;
         p.initialize();
-        p.game_play();
-        //ongoing = false;
+        // TODO: add more mode
+        // std::cout << "請選擇模式";
+        // std::cin >> command;
+        p.self_practice();
+        std::cout << "輸入r開啟新局，任意鍵離開: ";
+        std::cin >> command;
+        ongoing = (command == "r");
     }
 
     return 0;
